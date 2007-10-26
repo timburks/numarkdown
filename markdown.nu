@@ -186,19 +186,19 @@
      (set nested_tags -"(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>])*>))*>))*>))*>))*>))*>)")
      (set match (eregex <<-END
 		(?s: <! ( -- .*? -- \s* )+ > ) |  # comment
-		(?s: <? .*? ?> ) |              # processing instruction
-		(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>]|(?:<[a-z/!$](?:[^<>])*>))*>))*>))*>))*>))*>)/ix;                   # nested tags
+		(?s: <\? .*? \?> ) |              # processing instruction
+		#{nested_tags}          
 		END -"ix"))
      ((match findAllInString:str) each:
       (do (m)
-          (set whole_tag (m groupAtIndex:1))
+          (set whole_tag (m groupAtIndex:0))
           (set r (m range))
           (set sec_start (+ (head r) (head (tail r))))
           (set tag_start (- sec_start (whole_tag length)))
           (if (< $pos tag_start)
               (tokens addObject:(list -"text" (str substringWithRange:(list $pos (- tag_start $pos))))))
           (tokens addObject:(list -"tag" (m group)))
-          (set $pos (+ $pos ((m group) length)))))
+          (set $pos sec_start)))
      (if (< $pos len)
          (tokens addObject:(list -"text" (str substringFromIndex:$pos))))     
      (tokens list))
@@ -244,8 +244,9 @@
 		(.+?)		# $2 = The code block
 		(?<!`)
 		\1			# Matching closer
-		(?!`)END -"sx") findAllInString:str) each:(do (m)
-       (str replaceOccurrencesOfString:(m group) withString:-"<code>#{(markdown_EncodeCode ((m groupAtIndex:2) strip))}</code>")))
+		(?!`)END -"sx") findAllInString:str) each:
+      (do (m)
+          (str replaceOccurrencesOfString:(m group) withString:-"<code>#{(markdown_EncodeCode ((m groupAtIndex:2) strip))}</code>")))
      str)
 
 (function markdown_EncodeItalicsAndBolds (str)
@@ -559,6 +560,7 @@
 (function markdown_FormParagraphs (str)
      (set str (/(\A\n+)|(\n+\z)/ replaceWithString:"" inString:str))
      (set paragraphs (/\n{2,}/ splitString:str))     
+     
      ; Wrap <p> tags
      (set paragraphs (paragraphs map:(do (paragraph)
                                          (unless ($g_html_blocks valueForKey:paragraph)
@@ -593,19 +595,28 @@
      (-"\`*_{}[]()>#+-.!" each: (do (c) ($g_escape_table setObject:"!!#{(c hash)}!!" forKey:c)))
      
      (set $g_nested_brackets -"(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[\])*\])*\])*\])*\])*\])*") 
-     ; From running from Markdown.php
+     ;; From running from Markdown.php
      (set $g_list_level 0)
-     ; Standardize line endings
+     
+     ;; Standardize line endings
      (set str (/\r\n/ replaceWithString:"\n" inString:str)) ; Convert DOS to Unix
      (set str (/\r/ replaceWithString:"\n" inString:str)) ; Convert Mac to Unix
-     (str appendString:"\n\n") ; Make sure text ends with a couple of newlines
-     (set str (markdown_Detab str)) ; convert tabs into 4 spaces
-     (set str (/^[ \t]+$/ replaceWithString:"" inString:str)) ; Strip any lines consisting only of spaces and tabs.
-     (set str (markdown_HashHTMLBlocks str))       ; Turn block-level HTML blocks into hash entries
-     (set str (markdown_StripLinkDefinitions str)) ; Strip link definitions, store in hashes.
+     ;; Make sure text ends with a couple of newlines
+     (str appendString:"\n\n") 
+     ;; Convert tabs into 4 spaces
+     (set str (markdown_Detab str))
+     ;; Strip any lines consisting only of spaces and tabs.
+     (set str (/^[ \t]+$/ replaceWithString:"" inString:str)) 
+     ;; Turn block-level HTML blocks into hash entries
+     (set str (markdown_HashHTMLBlocks str))       
+     ;; Strip link definitions, store in hashes.
+     (set str (markdown_StripLinkDefinitions str)) 
+     
      (set str (markdown_RunBlockGamut str))
+     
      (set str (markdown_UnescapeSpecialChars str))
-     (unless (eq (str lastCharacter) '\n') (str appendCharacter:'\n'))
+     
+     (str appendCharacter:'\n')
      str)
 
 (class NuMarkdown is NSObject
