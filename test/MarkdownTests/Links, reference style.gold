@@ -27,7 +27,7 @@
 
 <p>And <a href="foo">this</a>.</p>
 
-<p>And <a href="foo">this</a>.</p>
+<p>And [this].</p>
 
 <p>But not [that] [].</p>
 
@@ -37,7 +37,7 @@
 
 <p>[Something in brackets like <a href="foo">this</a> should work]</p>
 
-<p>[Same with <a href="foo">this</a>.]</p>
+<p>[Same with [this].]</p>
 
 <p>In this case, <a href="/somethingelse/">this</a> points to something else.</p>
 
@@ -45,8 +45,8 @@
 
 <hr />
 
-<p>Here's one where the <a href="/url/">link
-breaks</a> across lines.</p>
+<p>Here's one where the [link
+breaks] across lines.</p>
 
-<p>Here's another where the <a href="/url/">link 
-breaks</a> across lines, but with a line-ending space.</p>
+<p>Here's another where the [link 
+breaks] across lines, but with a line-ending space.</p>

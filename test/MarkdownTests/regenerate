@@ -1,0 +1,12 @@
+#!/usr/bin/env nush
+#
+# Use this script to regenerate the gold files if Markdown changes.
+# It assumes that the latest Markdown.pl is in ../../bin.
+#
+
+(set files (filelist ".*\.markdown$"))
+(files each: 
+       (do (file) 
+           (set command "../../bin/Markdown.pl < '#{file}' > '#{(/markdown/ replaceWithString:\"gold\" inString:file)}'") 
+           (puts command)
+           (system command)))

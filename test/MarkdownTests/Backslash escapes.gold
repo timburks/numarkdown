@@ -101,7 +101,6 @@ Minus: \-
 
 <p>Minus: <code>\-</code></p>
 
-
 <p>These should get escaped, even though they're matching pairs for
 other Markdown constructs:</p>
 
@@ -109,10 +108,10 @@ other Markdown constructs:</p>
 
 <p>_underscores_</p>
 
-<p>`backticks`</p>
+<p>\<code>backticks\</code></p>
 
 <p>This is a code span with a literal backslash-backtick sequence: <code>\`</code></p>
 
-<p>This is a tag with unescaped backticks <span attr='`ticks`'>bar</span>.</p>
+<p>This is a tag with unescaped backticks <span attr='<code>ticks</code>'>bar</span>.</p>
 
 <p>This is a tag with backslashes <span attr='\\backslashes\\'>bar</span>.</p>

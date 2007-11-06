@@ -246,7 +246,9 @@
 		\1			# Matching closer
 		(?!`)END -"sx") findAllInString:str) each:
       (do (m)
-          (str replaceOccurrencesOfString:(m group) withString:-"<code>#{(markdown_EncodeCode ((m groupAtIndex:2) strip))}</code>")))
+		  (set temp (/^[ \t]*/ replaceWithString:"" inString:(m groupAtIndex:2)))
+		  (set temp (/[ \t]*$/ replaceWithString:"" inString:temp))
+          (str replaceOccurrencesOfString:(m group) withString:-"<code>#{(markdown_EncodeCode temp)}</code>")))
      str)
 
 (function markdown_EncodeItalicsAndBolds (str)
@@ -529,11 +531,12 @@
 		  )+
 		)
 		((?=^[ ]{0,4}\S)|\Z)	# Lookahead for non-space at line-start, or end of doc
-		END -"mx") findAllInString:str) each:(do (m)
-       (set codeblock (m groupAtIndex:1))
-       (set codeblock (markdown_Detab (markdown_EncodeCode (markdown_Outdent codeblock))))
-       (set codeblock ((regex -"(\A\n+)|(\s+\z)") replaceWithString:-"" inString:codeblock))
-       (str replaceOccurrencesOfString:(m group) withString:"\n<pre><code>#{codeblock}\n</code></pre>\n\n")))
+		END -"mx") findAllInString:str) each:
+      (do (m)
+          (set codeblock (m groupAtIndex:1))
+          (set codeblock (markdown_Detab (markdown_EncodeCode (markdown_Outdent codeblock))))
+          (set codeblock ((regex -"(\A\n+)|(\s+\z)") replaceWithString:-"" inString:codeblock))
+          (str replaceOccurrencesOfString:(m group) withString:"\n<pre><code>#{codeblock}\n</code></pre>\n\n")))
      str)
 
 (function markdown_DoBlockQuotes (str)

@@ -12,9 +12,9 @@
 
 <p><img src="/url/" alt="alt text" title="with a title" />.</p>
 
-<p><img src="" alt="Empty" title="" /></p>
+<p>!<a href="">Empty</a></p>
 
-<p><img src="http://example.com/(parens).jpg" alt="this is a stupid URL" title="" /></p>
+<p><img src="http://example.com/(parens" alt="this is a stupid URL" title="" />.jpg)</p>
 
 <p><img src="/url/" alt="alt text" /></p>
 

@@ -2,15 +2,17 @@
 
 <div>foo</div>
 
-<p>And nested without indentation:</p>
+And nested without indentation:
 
 <div>
 <div>
 <div>
 foo
 </div>
+
 <div style=">"/>
 </div>
+
 <div>bar</div>
 </div>
 
@@ -27,4 +29,5 @@ foo
 <div class="toggleableend">
 foo
 </div>
-</div>
+
+<p></div></p>
