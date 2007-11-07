@@ -288,8 +288,13 @@
            (set url (markdown_EncodeItalicsAndBolds ($g_urls objectForKey:link_id)))
            (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
            (if (!= ($g_titles valueForKey:link_id) nil)
-               (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles objectForKey:link_id))))              
-               (set result (result stringByAppendingString:" title=\"#{title}\"")))
+               (then (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles objectForKey:link_id))))              
+                     (set result (result stringByAppendingString:" title=\"#{title}\"")))
+               ;; it seems like this else clause should be included
+               ;; but it breaks the MarkdownTests regressions
+               ;; which I think is a bug in Markdown.pl
+               ;;(else (set result (result stringByAppendingString:" title=\"\""))
+               )
            (set result (result stringByAppendingString:-" />"))
            (else (set result whole_match)))
        (str replaceOccurrencesOfString:whole_match withString:result)))
@@ -316,8 +321,10 @@
        (set url (m groupAtIndex:3))
        (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
        (if (!= (m groupAtIndex:6) nil)
-           (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (m groupAtIndex:6))))
-           (set result (result stringByAppendingString:" title=\"#{title}\"")))
+           (then (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (m groupAtIndex:6))))
+                 (set result (result stringByAppendingString:" title=\"#{title}\"")))
+           (else (set result (result stringByAppendingString:" title=\"\""))))
+       
        (set result (result stringByAppendingString:-" />"))
        (str replaceOccurrencesOfString:whole_match withString:result)))
      str)
