@@ -288,13 +288,10 @@
            (set url (markdown_EncodeItalicsAndBolds ($g_urls objectForKey:link_id)))
            (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
            (if (!= ($g_titles valueForKey:link_id) nil)
-               (set title (markdown_EncodeItalicsAndBolds ($g_titles objectForKey:link_id)))
-               (set result (result stringByAppendingString:" title=\"#{title}\""))
-               )
+               (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles objectForKey:link_id))))              
+               (set result (result stringByAppendingString:" title=\"#{title}\"")))
            (set result (result stringByAppendingString:-" />"))
-           (else
-                (set result whole_match)
-                ))
+           (else (set result whole_match)))
        (str replaceOccurrencesOfString:whole_match withString:result)))
      ; Next, handle inline images:  ![alt text](url -"optional title")
      (((eregex <<-END
@@ -350,11 +347,10 @@
            (set url (markdown_EncodeItalicsAndBolds ($g_urls valueForKey:link_id)))
            (set result "<a href=\"#{url}\"")
            (if (!= ($g_titles valueForKey:link_id) nil)
-               (set title (markdown_EncodeItalicsAndBolds ($g_titles valueForKey:link_id)))
+               (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles valueForKey:link_id))))
                (set result (result stringByAppendingString:" title=\"#{title}\"")))
            (set result (result stringByAppendingString:-">#{link_text}</a>"))
-           (else
-                (set result whole_match)))
+           (else (set result whole_match)))
        (str replaceOccurrencesOfString:whole_match withString:result)))
      
      ; Next, inline-style links: [link text](url -"optional title")
