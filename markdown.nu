@@ -148,12 +148,12 @@
 			[")]
 			[ \t]*
 		)?	# title is optional
-		(?:\n+|\Z)END -"mx") findAllInString:str) each:
+		(?:\n+|\Z)END -"mx") findAllInString:str) eachInReverse:
       (do (m)
           ($g_urls setObject:(markdown_EncodeAmpsAndAngles (m groupAtIndex:2)) forKey:(m groupAtIndex:1))
           (if (!= (m groupAtIndex:3) nil)
               ($g_titles setObject:(m groupAtIndex:3) forKey:(m groupAtIndex:1)))
-          (str replaceOccurrencesOfString:(m group) withString:-"")))    
+          (str replaceCharactersInRange:(m range) withString:"")))    
      str)
 
 (function markdown_EncodeCode (str)
@@ -278,28 +278,29 @@
 		    (.*?)		# id = $3
 		  \]
 
-		)END -"xsge") findAllInString:str) each:(do (m)
-       (set whole_match (m groupAtIndex:1))
-       (set alt_text (m groupAtIndex:2))
-       (set link_id (m groupAtIndex:3))
-       (set result nil)
-       (if (== link_id -"")
-           (set link_id alt_text))
-       (set alt_text ((regex "\"") replaceWithString:-"&quot;" inString:alt_text))
-       (if (!= ($g_urls objectForKey:link_id) nil)
-           (set url (markdown_EncodeItalicsAndBolds ($g_urls objectForKey:link_id)))
-           (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
-           (if (!= ($g_titles valueForKey:link_id) nil)
-               (then (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles objectForKey:link_id))))              
-                     (set result (result stringByAppendingString:" title=\"#{title}\"")))
-               ;; it seems like this else clause should be included
-               ;; but it breaks the MarkdownTests regressions
-               ;; which I think is a bug in Markdown.pl
-               ;;(else (set result (result stringByAppendingString:" title=\"\""))
-               )
-           (set result (result stringByAppendingString:-" />"))
-           (else (set result whole_match)))
-       (str replaceOccurrencesOfString:whole_match withString:result)))
+		)END -"xsge") findAllInString:str) eachInReverse:
+      (do (m)
+          (set whole_match (m groupAtIndex:1))
+          (set alt_text (m groupAtIndex:2))
+          (set link_id (m groupAtIndex:3))
+          (set result nil)
+          (if (== link_id -"")
+              (set link_id alt_text))
+          (set alt_text ((regex "\"") replaceWithString:-"&quot;" inString:alt_text))
+          (if (!= ($g_urls objectForKey:link_id) nil)
+              (set url (markdown_EncodeItalicsAndBolds ($g_urls objectForKey:link_id)))
+              (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
+              (if (!= ($g_titles valueForKey:link_id) nil)
+                  (then (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles objectForKey:link_id))))              
+                        (set result (result stringByAppendingString:" title=\"#{title}\"")))
+                  ;; it seems like this else clause should be included
+                  ;; but it breaks the MarkdownTests regressions
+                  ;; which I think is a bug in Markdown.pl
+                  ;;(else (set result (result stringByAppendingString:" title=\"\""))
+                  )
+              (set result (result stringByAppendingString:-" />"))
+              (else (set result whole_match)))
+          (str replaceOccurrencesOfString:whole_match withString:result)))
      ; Next, handle inline images:  ![alt text](url -"optional title")
      (((eregex <<-END
 		(				# wrap whole match in $1
@@ -317,18 +318,19 @@
 			  [ \t]*
 			)?			# title is optional
 		  \)
-		)END -"xsge") findAllInString:str) each:(do (m)
-       (set whole_match (m groupAtIndex:1))
-       (set alt_text (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (m groupAtIndex:2))))
-       (set url (m groupAtIndex:3))
-       (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
-       (if (!= (m groupAtIndex:6) nil)
-           (then (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (m groupAtIndex:6))))
-                 (set result (result stringByAppendingString:" title=\"#{title}\"")))
-           (else (set result (result stringByAppendingString:" title=\"\""))))
-       
-       (set result (result stringByAppendingString:-" />"))
-       (str replaceOccurrencesOfString:whole_match withString:result)))
+		)END -"xsge") findAllInString:str) eachInReverse:
+      (do (m)
+          (set whole_match (m groupAtIndex:1))
+          (set alt_text (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (m groupAtIndex:2))))
+          (set url (m groupAtIndex:3))
+          (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
+          (if (!= (m groupAtIndex:6) nil)
+              (then (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (m groupAtIndex:6))))
+                    (set result (result stringByAppendingString:" title=\"#{title}\"")))
+              (else (set result (result stringByAppendingString:" title=\"\""))))
+          
+          (set result (result stringByAppendingString:-" />"))
+          (str replaceOccurrencesOfString:whole_match withString:result)))
      str)
 
 (function markdown_DoAnchors (str)
@@ -346,21 +348,22 @@
 			  \[
 			    (.*?)		# id = $3
 			  \]
-			)END -"xsge") findAllInString:str) each:(do (m)
-       (set result nil)
-       (set whole_match (m groupAtIndex:1))
-       (set link_text (m groupAtIndex:2))
-       (set link_id (m groupAtIndex:3))
-       (if (== link_id -"") (set link_id link_text))
-       (if (!= ($g_urls valueForKey:link_id) nil)
-           (set url (markdown_EncodeItalicsAndBolds ($g_urls valueForKey:link_id)))
-           (set result "<a href=\"#{url}\"")
-           (if (!= ($g_titles valueForKey:link_id) nil)
-               (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles valueForKey:link_id))))
-               (set result (result stringByAppendingString:" title=\"#{title}\"")))
-           (set result (result stringByAppendingString:-">#{link_text}</a>"))
-           (else (set result whole_match)))
-       (str replaceOccurrencesOfString:whole_match withString:result)))
+			)END -"xsge") findAllInString:str) eachInReverse:
+      (do (m)
+          (set result nil)
+          (set whole_match (m groupAtIndex:1))
+          (set link_text (m groupAtIndex:2))
+          (set link_id (m groupAtIndex:3))
+          (if (== link_id -"") (set link_id link_text))
+          (if (!= ($g_urls valueForKey:link_id) nil)
+              (set url (markdown_EncodeItalicsAndBolds ($g_urls valueForKey:link_id)))
+              (set result "<a href=\"#{url}\"")
+              (if (!= ($g_titles valueForKey:link_id) nil)
+                  (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds ($g_titles valueForKey:link_id))))
+                  (set result (result stringByAppendingString:" title=\"#{title}\"")))
+              (set result (result stringByAppendingString:-">#{link_text}</a>"))
+              (else (set result whole_match)))
+          (str replaceOccurrencesOfString:whole_match withString:result)))
      
      ; Next, inline-style links: [link text](url -"optional title")
      (((eregex <<-END
@@ -378,17 +381,18 @@
 			  \5		# matching quote
 			)?			# title is optional
 		  \)
-		)END -"xsge") findAllInString:str) each:(do (m)
-       (set whole_match (m groupAtIndex:1))
-       (set link_text (m groupAtIndex:2))
-       (set url (markdown_EncodeItalicsAndBolds (m groupAtIndex:3)))
-       (set title (m groupAtIndex:6))
-       (set result "<a href=\"#{url}\"")
-       (if (!= title nil)
-           (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (title))))
-           (set result (result stringByAppendingString:" title=\"#{title}\"")))
-       (set result (result stringByAppendingString:-">#{link_text}</a>"))
-       (str replaceOccurrencesOfString:whole_match withString:result)))
+		)END -"xsge") findAllInString:str) eachInReverse:
+      (do (m)
+          (set whole_match (m groupAtIndex:1))
+          (set link_text (m groupAtIndex:2))
+          (set url (markdown_EncodeItalicsAndBolds (m groupAtIndex:3)))
+          (set title (m groupAtIndex:6))
+          (set result "<a href=\"#{url}\"")
+          (if (!= title nil)
+              (set title (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (title))))
+              (set result (result stringByAppendingString:" title=\"#{title}\"")))
+          (set result (result stringByAppendingString:-">#{link_text}</a>"))
+          (str replaceOccurrencesOfString:whole_match withString:result)))
      str)
 
 (function markdown_UnescapeSpecialChars (str)
@@ -430,12 +434,12 @@
      ;  
      ;	  Header 2
      ;	  --------     
-     (((eregex -"^(.+)[ \t]*\n=+[ \t]*\n+" -"mx") findAllInString:str) each:
+     (((eregex -"^(.+)[ \t]*\n=+[ \t]*\n+" -"mx") findAllInString:str) eachInReverse:
       (do (m) ; Note the multi-line hack below.  -"\n\n" is not turned into new lines.
-          (str replaceOccurrencesOfString:(m group) withString:"<h1>#{(markdown_RunSpanGamut (m groupAtIndex:1))}</h1>\n\n")))
-     (((eregex -"^(.+)[ \t]*\n-+[ \t]*\n+" -"mx") findAllInString:str) each:
+          (str replaceCharactersInRange:(m range) withString:"<h1>#{(markdown_RunSpanGamut (m groupAtIndex:1))}</h1>\n\n")))
+     (((eregex -"^(.+)[ \t]*\n-+[ \t]*\n+" -"mx") findAllInString:str) eachInReverse:
       (do (m)
-          (str replaceOccurrencesOfString:(m group) withString:"<h2>#{(markdown_RunSpanGamut (m groupAtIndex:1))}</h2>\n\n")))
+          (str replaceCharactersInRange:(m range) withString:"<h2>#{(markdown_RunSpanGamut (m groupAtIndex:1))}</h2>\n\n")))
      
      ; atx-style headers:
      ;	# Header 1
@@ -450,10 +454,10 @@
 		(.+?)			# $2 = Header text
 		[ \t]*
 		\#*				# optional closing #'s (not counted)
-		\n+END -"mx") findAllInString:str) each:(do (m)
-       (str replaceOccurrencesOfString:(m group) 
-            withString:"<h#{((m groupAtIndex:1) length)}>#{(markdown_RunSpanGamut (m groupAtIndex:2))}</h#{((m groupAtIndex:1) length)}>\n\n"
-            )))
+		\n+END -"mx") findAllInString:str) eachInReverse:
+      (do (m)
+          (str replaceCharactersInRange:(m range) 
+               withString:"<h#{((m groupAtIndex:1) length)}>#{(markdown_RunSpanGamut (m groupAtIndex:2))}</h#{((m groupAtIndex:1) length)}>\n\n")))
      str)
 
 (function markdown_Outdent (item)
@@ -469,7 +473,7 @@
 		(#{marker_any}) [ \t]+			# list marker = $3
 		((?s:.+?)						# list item text   = $4
 		(\n{1,2}))
-		(?= \n* (\z | \2 (#{marker_any}) [ \t]+))END -"mx") findAllInString:list_str) each:
+		(?= \n* (\z | \2 (#{marker_any}) [ \t]+))END -"mx") findAllInString:list_str) eachInReverse:
       (do (m)
           (set item (m groupAtIndex:4))
           (set leading_line (m groupAtIndex:1))
@@ -478,7 +482,7 @@
           (if (or leading_line ((regex -"\n{2,}") findInString:item)) 
               (then (set item (markdown_RunBlockGamut (markdown_Outdent item))))
               (else (set item (markdown_RunSpanGamut ((markdown_DoLists (markdown_Outdent item)) chomp)))))
-          (list_str replaceOccurrencesOfString:(m group) withString:"<li>#{item}</li>\n" options:0 range:(list 0 (list_str length)))))
+          (list_str replaceCharactersInRange:(m range) withString:"<li>#{item}</li>\n")))
      (set $g_list_level (- $g_list_level 1))
      list_str)
 
@@ -489,7 +493,7 @@
      (set whole_list -"(([ ]{0,3}(#{marker_any})[ \t]+)(?s:.+?)(\z|\n{2,}(?=\S)(?![ \t]*#{marker_any}[ \t]+)))")
      (set result str) ;; default
      (if (> $g_list_level 0)
-         (then (((eregex -"^#{whole_list}" -"mx") findAllInString:str) each:
+         (then (((eregex -"^#{whole_list}" -"mx") findAllInString:str) eachInReverse:
                 (do (m)
                     (set m_list (m groupAtIndex:1))
                     (if ((regex marker_ul) findInString:(m groupAtIndex:3)) (then (set list_type -"ul")) (else (set list_type -"ol")))
@@ -498,9 +502,9 @@
                     (set m_list ((regex -"\n{2,}") replaceWithString:"\n\n\n" inString:m_list))
                     (set formattedList (markdown_ProcessListItems m_list marker_any))
                     (set formattedList "<#{list_type}>\n#{formattedList}</#{list_type}>\n")
-                    (result replaceOccurrencesOfString:(m group) withString:formattedList options:0 range:(list 0 (result length))))))
+                    (result replaceCharactersInRange:(m range) withString:formattedList))))
          (else 
-               (((eregex -"(?:(?<=\n\n)|\A\n?)#{whole_list}" -"mx") findAllInString:str) each:
+               (((eregex -"(?:(?<=\n\n)|\A\n?)#{whole_list}" -"mx") findAllInString:str) eachInReverse:
                 (do (m)
                     (set m_list (m groupAtIndex:1))
                     (if ((regex marker_ul) findInString:(m groupAtIndex:3)) (then (set list_type -"ul")) (else (set list_type -"ol")))
@@ -509,8 +513,7 @@
                     (set m_list ((regex -"\n{2,}") replaceWithString:"\n\n\n" inString:m_list))
                     (set formattedList (markdown_ProcessListItems m_list marker_any))
                     (set formattedList "<#{list_type}>\n#{formattedList}</#{list_type}>\n")
-                    (result replaceOccurrencesOfString:(m group) withString:formattedList options:0 range:(list 0 (result length)))))
-               ))
+                    (result replaceCharactersInRange:(m range) withString:formattedList)))))
      result)
 
 (function markdown_Detab (str)
@@ -531,12 +534,12 @@
 		  )+
 		)
 		((?=^[ ]{0,4}\S)|\Z)	# Lookahead for non-space at line-start, or end of doc
-		END -"mx") findAllInString:str) each:
+		END -"mx") findAllInString:str) eachInReverse:
       (do (m)
           (set codeblock (m groupAtIndex:1))
           (set codeblock (markdown_Detab (markdown_EncodeCode (markdown_Outdent codeblock))))
           (set codeblock ((regex -"(\A\n+)|(\s+\z)") replaceWithString:-"" inString:codeblock))
-          (str replaceOccurrencesOfString:(m group) withString:"\n<pre><code>#{codeblock}\n</code></pre>\n\n")))
+          (str replaceCharactersInRange:(m range) withString:"\n<pre><code>#{codeblock}\n</code></pre>\n\n")))
      str)
 
 (function markdown_DoBlockQuotes (str)
@@ -548,7 +551,7 @@
 			  (.+\n)*					# subsequent consecutive lines
 			  \n*						# blanks
 			)+
-		)/mx findAllInString:str) each:
+		)/mx findAllInString:str) eachInReverse:
       (do (m)
           (set bq (m groupAtIndex:1))
           (set bq (/^[ \t]*>[ \t]?/m replaceWithString:"" inString:bq)) ;; trim one level of quoting
@@ -556,10 +559,10 @@
           (set bq (markdown_RunBlockGamut bq))
           (set bq (/^/m replaceWithString:"  " inString:bq))
           ; These leading spaces screw with <pre> content, so we need to fix that:
-          (((eregex -"(\s*<pre>.+?</pre>)" -"egsx") findAllInString:bq) each:
+          (((eregex -"(\s*<pre>.+?</pre>)" -"egsx") findAllInString:bq) eachInReverse:
            (do (m2) 
-               (bq replaceOccurrencesOfString:(m2 group) withString:((eregex -"^  " -"mg") replaceWithString:-"" inString:(m2 groupAtIndex:1)))))
-          (str replaceOccurrencesOfString:(m group) withString:"<blockquote>\n#{bq}\n</blockquote>\n\n")))
+               (bq replaceCharactersInRange:(m2 range) withString:((eregex -"^  " -"mg") replaceWithString:-"" inString:(m2 groupAtIndex:1)))))
+          (str replaceCharactersInRange:(m range) withString:"<blockquote>\n#{bq}\n</blockquote>\n\n")))
      str)
 
 (function markdown_FormParagraphs (str)
