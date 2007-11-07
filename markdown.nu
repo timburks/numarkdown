@@ -62,10 +62,10 @@
 			[ \t]*				# trailing spaces/tabs
 			(?=\n+|\Z)			# followed by a newline or end of document
 		)END -"mx"))
-     ((r findAllInString:str) each:
+     ((r findAllInString:str) eachInReverse:
       (do (m)
           ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
-          (str replaceOccurrencesOfString:(m group) withString:"\n\n!!#{(m hash)}!!\n\n")))     
+          (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))     
      
      (set r (eregex <<-END
 		(						# save in $1
@@ -77,10 +77,10 @@
 			[ \t]*				# trailing spaces/tabs
 			(?=\n+|\Z)	# followed by a newline or end of document
 		)END -"mx"))
-     ((r findAllInString:str) each:
+     ((r findAllInString:str) eachInReverse:
       (do (m)
           ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
-          (str replaceOccurrencesOfString:(m group) withString:"\n\n!!#{(m hash)}!!\n\n")))
+          (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))
      
      ; Special case just for <hr />. It was easier to make a special case than
      ; to make the other regex more complicated
@@ -98,10 +98,10 @@
 			/?>					# the matching end tag
 			[ \t]*
 			(?=\n{2,}|\Z)		# followed by a blank line or end of document
-		)END -"mx") findAllInString:str) each:
+		)END -"mx") findAllInString:str) eachInReverse:
       (do (m)		
           ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
-          (str replaceOccurrencesOfString:(m group) withString:"\n\n!!#{(m hash)}!!\n\n")))     
+          (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))     
      
      ; Special case for standalone HTML comments
      (((eregex <<-END
@@ -119,9 +119,10 @@
 			)
 			[ \t]*
 			(?=\n{2,}|\Z)		# followed by a blank line or end of document
-		)END -"mx") findAllInString:str) each:(do (m)
-       ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
-       (str replaceOccurrencesOfString:(m group) withString:"\n\n!!#{(m hash)}!!\n\n")))  
+		)END -"mx") findAllInString:str) eachInReverse:
+      (do (m)
+          ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
+          (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))
      str)
 
 (function markdown_EncodeAmpsAndAngles (str)
@@ -147,11 +148,12 @@
 			[")]
 			[ \t]*
 		)?	# title is optional
-		(?:\n+|\Z)END -"mx") findAllInString:str) each:(do (m)
-       ($g_urls setObject:(markdown_EncodeAmpsAndAngles (m groupAtIndex:2)) forKey:(m groupAtIndex:1))
-       (if (!= (m groupAtIndex:3) nil)
-           ($g_titles setObject:(m groupAtIndex:3) forKey:(m groupAtIndex:1)))
-       (str replaceOccurrencesOfString:(m group) withString:-"")))    
+		(?:\n+|\Z)END -"mx") findAllInString:str) each:
+      (do (m)
+          ($g_urls setObject:(markdown_EncodeAmpsAndAngles (m groupAtIndex:2)) forKey:(m groupAtIndex:1))
+          (if (!= (m groupAtIndex:3) nil)
+              ($g_titles setObject:(m groupAtIndex:3) forKey:(m groupAtIndex:1)))
+          (str replaceOccurrencesOfString:(m group) withString:-"")))    
      str)
 
 (function markdown_EncodeCode (str)
@@ -244,11 +246,11 @@
 		(.+?)		# $2 = The code block
 		(?<!`)
 		\1			# Matching closer
-		(?!`)END -"sx") findAllInString:str) each:
+		(?!`)END -"sx") findAllInString:str) eachInReverse:
       (do (m)
           (set temp (/^[ \t]*/ replaceWithString:"" inString:(m groupAtIndex:2)))
           (set temp (/[ \t]*$/ replaceWithString:"" inString:temp))
-          (str replaceOccurrencesOfString:(m group) withString:-"<code>#{(markdown_EncodeCode temp)}</code>")))
+          (str replaceCharactersInRange:(m range) withString:-"<code>#{(markdown_EncodeCode temp)}</code>")))
      str)
 
 (function markdown_EncodeItalicsAndBolds (str)
@@ -512,9 +514,9 @@
      result)
 
 (function markdown_Detab (str)
-     ((/(.*?)\t/ findAllInString:str) each: 
+     ((/(.*?)\t/ findAllInString:str) eachInReverse: 
       (do (m)
-          (str replaceOccurrencesOfString:(m group) 
+          (str replaceCharactersInRange:(m range) 
                withString:"#{(m groupAtIndex:1)}#{(NSString spaces:(- 4 (NuMath integerMod:((m groupAtIndex:1) length) by:4)))}")))
      str)
 
@@ -610,8 +612,10 @@
      (set str (markdown_Detab str))
      ;; Strip any lines consisting only of spaces and tabs.
      (set str (/^[ \t]+$/m replaceWithString:"" inString:str)) 
+     
      ;; Turn block-level HTML blocks into hash entries
-     (set str (markdown_HashHTMLBlocks str))       
+     (set str (markdown_HashHTMLBlocks str))    
+     
      ;; Strip link definitions, store in hashes.
      (set str (markdown_StripLinkDefinitions str)) 
      
