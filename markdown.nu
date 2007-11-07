@@ -556,11 +556,11 @@
 (function markdown_FormParagraphs (str)
      (set str (/(\A\n+)|(\n+\z)/ replaceWithString:"" inString:str))
      (set paragraphs (/\n{2,}/ splitString:str))     
-     
      ; Wrap <p> tags
      (set paragraphs (paragraphs map:(do (paragraph)
                                          (unless ($g_html_blocks valueForKey:paragraph)
-                                                 (set paragraph (/^([ \t]*)/ replaceWithString:"<p>$1" inString:(markdown_RunSpanGamut paragraph)))
+                                                 
+                                                 (set paragraph (/^([ \t]*)/ replaceWithString:"<p>" inString:(markdown_RunSpanGamut paragraph)))
                                                  (paragraph appendString:"</p>"))
                                          paragraph)))     
      ; Unhashify HTML blocks
@@ -602,7 +602,7 @@
      ;; Convert tabs into 4 spaces
      (set str (markdown_Detab str))
      ;; Strip any lines consisting only of spaces and tabs.
-     (set str (/^[ \t]+$/ replaceWithString:"" inString:str)) 
+     (set str (/^[ \t]+$/m replaceWithString:"" inString:str)) 
      ;; Turn block-level HTML blocks into hash entries
      (set str (markdown_HashHTMLBlocks str))       
      ;; Strip link definitions, store in hashes.
