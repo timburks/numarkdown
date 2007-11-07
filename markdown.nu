@@ -551,7 +551,9 @@
           (set bq (markdown_RunBlockGamut bq))
           (set bq (/^/m replaceWithString:"  " inString:bq))
           ; These leading spaces screw with <pre> content, so we need to fix that:
-          (set bq ((eregex -"(\s*<pre>.+?</pre>)" -"egsx") replaceWithString:((eregex -"^  " -"mg") replaceWithString:-"" inString:-"$1") inString:bq))
+          (((eregex -"(\s*<pre>.+?</pre>)" -"egsx") findAllInString:bq) each:
+           (do (m2) 
+               (bq replaceOccurrencesOfString:(m2 group) withString:((eregex -"^  " -"mg") replaceWithString:-"" inString:(m2 groupAtIndex:1)))))
           (str replaceOccurrencesOfString:(m group) withString:"<blockquote>\n#{bq}\n</blockquote>\n\n")))
      str)
 
