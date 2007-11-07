@@ -11,11 +11,16 @@
 ; New function to do Perl-style regex matching
 (function eregex (pattern optionStr)
      (set options 0)
-     (if (> (head (tail (optionStr rangeOfString:-"i"))) 0) (set options (+ options 1)))
-     (if (> (head (tail (optionStr rangeOfString:-"s"))) 0) (set options (+ options 2)))
-     (if (> (head (tail (optionStr rangeOfString:-"x"))) 0) (set options (+ options 4)))
-     (if (> (head (tail (optionStr rangeOfString:-"l"))) 0) (set options (+ options 8)))
-     (if (> (head (tail (optionStr rangeOfString:-"m"))) 0) (set options (+ options 16)))
+     (optionStr each:
+          (do (c)
+              (set options (+ options         
+                              (case c 
+                                    ("i" 1)
+                                    ("s" 2)
+                                    ("x" 4)
+                                    ("l" 8)
+                                    ("m" 16)
+                                    (else 0))))))
      (NuRegex regexWithPattern:pattern options:options))
 
 (class NSString
@@ -61,12 +66,11 @@
 			</\2>				# the matching end tag
 			[ \t]*				# trailing spaces/tabs
 			(?=\n+|\Z)			# followed by a newline or end of document
-		)END -"mx"))
+		)END "mx"))
      ((r findAllInString:str) eachInReverse:
       (do (m)
           ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
           (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))     
-     
      (set r (eregex <<-END
 		(						# save in $1
 			^					# start of line  (with /m)
@@ -76,12 +80,11 @@
 			.*</\2>				# the matching end tag
 			[ \t]*				# trailing spaces/tabs
 			(?=\n+|\Z)	# followed by a newline or end of document
-		)END -"mx"))
+		)END "mx"))
      ((r findAllInString:str) eachInReverse:
       (do (m)
           ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
-          (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))
-     
+          (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))     
      ; Special case just for <hr />. It was easier to make a special case than
      ; to make the other regex more complicated
      (((eregex <<-END
@@ -98,11 +101,10 @@
 			/?>					# the matching end tag
 			[ \t]*
 			(?=\n{2,}|\Z)		# followed by a blank line or end of document
-		)END -"mx") findAllInString:str) eachInReverse:
+		)END "mx") findAllInString:str) eachInReverse:
       (do (m)		
           ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
           (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))     
-     
      ; Special case for standalone HTML comments
      (((eregex <<-END
 		(?:
@@ -119,7 +121,7 @@
 			)
 			[ \t]*
 			(?=\n{2,}|\Z)		# followed by a blank line or end of document
-		)END -"mx") findAllInString:str) eachInReverse:
+		)END "mx") findAllInString:str) eachInReverse:
       (do (m)
           ($g_html_blocks setObject:(m group) forKey:-"!!#{(m hash)}!!")
           (str replaceCharactersInRange:(m range) withString:"\n\n!!#{(m hash)}!!\n\n")))
@@ -148,7 +150,7 @@
 			[")]
 			[ \t]*
 		)?	# title is optional
-		(?:\n+|\Z)END -"mx") findAllInString:str) eachInReverse:
+		(?:\n+|\Z)END "mx") findAllInString:str) eachInReverse:
       (do (m)
           ($g_urls setObject:(markdown_EncodeAmpsAndAngles (m groupAtIndex:2)) forKey:(m groupAtIndex:1))
           (if (!= (m groupAtIndex:3) nil)
@@ -157,13 +159,13 @@
      str)
 
 (function markdown_EncodeCode (str)
-     (set str ((regex -"&") replaceWithString:-"&amp;" inString:str))
-     (set str ((regex -"<") replaceWithString:-"&lt;" inString:str))
-     (set str ((regex -">") replaceWithString:-"&gt;" inString:str))     
+     (set str ((regex "&") replaceWithString:"&amp;" inString:str))
+     (set str ((regex "<") replaceWithString:"&lt;" inString:str))
+     (set str ((regex ">") replaceWithString:"&gt;" inString:str))     
      (set str ((regex -"\*") replaceWithString:($g_escape_table objectForKey:"*") inString:str))
-     (set str ((regex -"_") replaceWithString:($g_escape_table objectForKey:"_") inString:str))
-     (set str ((regex -"{") replaceWithString:($g_escape_table objectForKey:"{") inString:str))
-     (set str ((regex -"}") replaceWithString:($g_escape_table objectForKey:"}") inString:str))
+     (set str ((regex "_") replaceWithString:($g_escape_table objectForKey:"_") inString:str))
+     (set str ((regex "{") replaceWithString:($g_escape_table objectForKey:"{") inString:str))
+     (set str ((regex "}") replaceWithString:($g_escape_table objectForKey:"}") inString:str))
      (set str ((regex -"\[") replaceWithString:($g_escape_table objectForKey:"[") inString:str))
      (set str ((regex -"\]") replaceWithString:($g_escape_table objectForKey:"]") inString:str))
      (set str ((regex -"\\") replaceWithString:($g_escape_table objectForKey:"\\") inString:str))
@@ -190,7 +192,7 @@
 		(?s: <! ( -- .*? -- \s* )+ > ) |  # comment
 		(?s: <\? .*? \?> ) |              # processing instruction
 		#{nested_tags}          
-		END -"ix"))
+		END "ix"))
      ((match findAllInString:str) each:
       (do (m)
           (set whole_tag (m groupAtIndex:0))
@@ -198,31 +200,31 @@
           (set sec_start (+ (head r) (head (tail r))))
           (set tag_start (- sec_start (whole_tag length)))
           (if (< $pos tag_start)
-              (tokens addObject:(list -"text" (str substringWithRange:(list $pos (- tag_start $pos))))))
-          (tokens addObject:(list -"tag" (m group)))
+              (tokens addObject:(list "text" (str substringWithRange:(list $pos (- tag_start $pos))))))
+          (tokens addObject:(list "tag" (m group)))
           (set $pos sec_start)))
      (if (< $pos len)
-         (tokens addObject:(list -"text" (str substringFromIndex:$pos))))     
+         (tokens addObject:(list "text" (str substringFromIndex:$pos))))     
      (tokens list))
 
 (function markdown_EncodeBackslashEscapes (str)
      (set str (NSMutableString stringWithString:str))
      (str replaceOccurrencesOfString:-"\\" withString:($g_escape_table objectForKey:"\\"))
-     (str replaceOccurrencesOfString:-"\`" withString:($g_escape_table objectForKey:-"`"))
-     (str replaceOccurrencesOfString:-"\*" withString:($g_escape_table objectForKey:-"*"))
-     (str replaceOccurrencesOfString:-"\_" withString:($g_escape_table objectForKey:-"_"))
-     (str replaceOccurrencesOfString:-"\{" withString:($g_escape_table objectForKey:-"{"))
-     (str replaceOccurrencesOfString:-"\}" withString:($g_escape_table objectForKey:-"}"))
-     (str replaceOccurrencesOfString:-"\[" withString:($g_escape_table objectForKey:-"["))
-     (str replaceOccurrencesOfString:-"\]" withString:($g_escape_table objectForKey:-"]"))
-     (str replaceOccurrencesOfString:-"\(" withString:($g_escape_table objectForKey:-"("))
-     (str replaceOccurrencesOfString:-"\)" withString:($g_escape_table objectForKey:-")"))
-     (str replaceOccurrencesOfString:-"\>" withString:($g_escape_table objectForKey:-">"))
-     (str replaceOccurrencesOfString:-"\#" withString:($g_escape_table objectForKey:-"#"))
-     (str replaceOccurrencesOfString:-"\+" withString:($g_escape_table objectForKey:-"+"))
-     (str replaceOccurrencesOfString:-"\-" withString:($g_escape_table objectForKey:-"-"))
-     (str replaceOccurrencesOfString:-"\." withString:($g_escape_table objectForKey:-"."))
-     (str replaceOccurrencesOfString:-"\!" withString:($g_escape_table objectForKey:-"!"))
+     (str replaceOccurrencesOfString:-"\`" withString:($g_escape_table objectForKey:"`"))
+     (str replaceOccurrencesOfString:-"\*" withString:($g_escape_table objectForKey:"*"))
+     (str replaceOccurrencesOfString:-"\_" withString:($g_escape_table objectForKey:"_"))
+     (str replaceOccurrencesOfString:-"\{" withString:($g_escape_table objectForKey:"{"))
+     (str replaceOccurrencesOfString:-"\}" withString:($g_escape_table objectForKey:"}"))
+     (str replaceOccurrencesOfString:-"\[" withString:($g_escape_table objectForKey:"["))
+     (str replaceOccurrencesOfString:-"\]" withString:($g_escape_table objectForKey:"]"))
+     (str replaceOccurrencesOfString:-"\(" withString:($g_escape_table objectForKey:"("))
+     (str replaceOccurrencesOfString:-"\)" withString:($g_escape_table objectForKey:")"))
+     (str replaceOccurrencesOfString:-"\>" withString:($g_escape_table objectForKey:">"))
+     (str replaceOccurrencesOfString:-"\#" withString:($g_escape_table objectForKey:"#"))
+     (str replaceOccurrencesOfString:-"\+" withString:($g_escape_table objectForKey:"+"))
+     (str replaceOccurrencesOfString:-"\-" withString:($g_escape_table objectForKey:"-"))
+     (str replaceOccurrencesOfString:-"\." withString:($g_escape_table objectForKey:"."))
+     (str replaceOccurrencesOfString:-"\!" withString:($g_escape_table objectForKey:"!"))
      str)
 
 (function markdown_EscapeSpecialChars (str)
@@ -231,9 +233,9 @@
      (tokens each:
              (do (token)
                  (set tmp (head (tail token)))
-                 (if (== (head token) -"tag")
-                     (set tmp ((eregex -"\*" -"gx") replaceWithString:($g_escape_table objectForKey:-"*") inString:tmp))
-                     (set tmp ((eregex -"_" -"gx") replaceWithString:($g_escape_table objectForKey:-"_") inString:tmp))
+                 (if (== (head token) "tag")
+                     (set tmp (/\*/x replaceWithString:($g_escape_table objectForKey:"*") inString:tmp))
+                     (set tmp (/_/x replaceWithString:($g_escape_table objectForKey:"_") inString:tmp))
                      (ret appendString:tmp)
                      (else
                           (ret appendString:(markdown_EncodeBackslashEscapes (head (tail token))))))))
@@ -241,12 +243,11 @@
 
 (function markdown_DoCodeSpans (str)
      (set str (NSMutableString stringWithString:str))
-     (((eregex <<-END
-		(`+)		# $1 = Opening run of `
+     ((/(`+)		# $1 = Opening run of `
 		(.+?)		# $2 = The code block
 		(?<!`)
 		\1			# Matching closer
-		(?!`)END -"sx") findAllInString:str) eachInReverse:
+		(?!`)/sx findAllInString:str) eachInReverse:
       (do (m)
           (set temp (/^[ \t]*/ replaceWithString:"" inString:(m groupAtIndex:2)))
           (set temp (/[ \t]*$/ replaceWithString:"" inString:temp))
@@ -254,39 +255,35 @@
      str)
 
 (function markdown_EncodeItalicsAndBolds (str)
-     (set str ((regex -"\*") replaceWithString:($g_escape_table objectForKey:-"*") inString:str))
-     (set str ((regex -"_") replaceWithString:($g_escape_table objectForKey:-"_") inString:str))
+     (set str ((regex -"\*") replaceWithString:($g_escape_table objectForKey:"*") inString:str))
+     (set str ((regex "_") replaceWithString:($g_escape_table objectForKey:"_") inString:str))
      str)
 
 (function markdown_EncodeQuotes (str)
-     (set str ((regex "\"") replaceWithString:-"&quot;" inString:str))
+     (set str ((regex "\"") replaceWithString:"&quot;" inString:str))
      str)
 
 (function markdown_DoImages (str)
      (set str (NSMutableString stringWithString:str))	
      ; First, handle reference-style labeled images: ![alt text][id]
-     (((eregex <<-END
-		(				# wrap whole match in $1
+     ((/(				# wrap whole match in $1
 		  !\[
 		    (.*?)		# alt text = $2
 		  \]
-
 		  [ ]?				# one optional space
 		  (?:\n[ ]*)?		# one optional newline followed by spaces
-
 		  \[
 		    (.*?)		# id = $3
 		  \]
-
-		)END -"xsge") findAllInString:str) eachInReverse:
+		)/xs findAllInString:str) eachInReverse:
       (do (m)
           (set whole_match (m groupAtIndex:1))
           (set alt_text (m groupAtIndex:2))
           (set link_id (m groupAtIndex:3))
           (set result nil)
-          (if (== link_id -"")
+          (if (== link_id "")
               (set link_id alt_text))
-          (set alt_text ((regex "\"") replaceWithString:-"&quot;" inString:alt_text))
+          (set alt_text ((regex "\"") replaceWithString:"&quot;" inString:alt_text))
           (if (!= ($g_urls objectForKey:link_id) nil)
               (set url (markdown_EncodeItalicsAndBolds ($g_urls objectForKey:link_id)))
               (set result "<img src=\"#{url}\" alt=\"#{alt_text}\"")
@@ -301,9 +298,8 @@
               (set result (result stringByAppendingString:-" />"))
               (else (set result whole_match)))
           (str replaceOccurrencesOfString:whole_match withString:result)))
-     ; Next, handle inline images:  ![alt text](url -"optional title")
-     (((eregex <<-END
-		(				# wrap whole match in $1
+     ; Next, handle inline images:  ![alt text](url "optional title")
+     ((/(				# wrap whole match in $1
 		  !\[
 		    (.*?)		# alt text = $2
 		  \]
@@ -318,7 +314,7 @@
 			  [ \t]*
 			)?			# title is optional
 		  \)
-		)END -"xsge") findAllInString:str) eachInReverse:
+		)/xs findAllInString:str) eachInReverse:
       (do (m)
           (set whole_match (m groupAtIndex:1))
           (set alt_text (markdown_EncodeQuotes (markdown_EncodeItalicsAndBolds (m groupAtIndex:2))))
@@ -341,20 +337,18 @@
 			  \[
 			    (#{$g_nested_brackets})	# link text = $2
 			  \]
-
 			  [ ]?				# one optional space
 			  (?:\n[ ]*)?		# one optional newline followed by spaces
-
 			  \[
 			    (.*?)		# id = $3
 			  \]
-			)END -"xsge") findAllInString:str) eachInReverse:
+			)END "xs") findAllInString:str) eachInReverse:
       (do (m)
           (set result nil)
           (set whole_match (m groupAtIndex:1))
           (set link_text (m groupAtIndex:2))
           (set link_id (m groupAtIndex:3))
-          (if (== link_id -"") (set link_id link_text))
+          (if (== link_id "") (set link_id link_text))
           (if (!= ($g_urls valueForKey:link_id) nil)
               (set url (markdown_EncodeItalicsAndBolds ($g_urls valueForKey:link_id)))
               (set result "<a href=\"#{url}\"")
@@ -363,9 +357,8 @@
                   (set result (result stringByAppendingString:" title=\"#{title}\"")))
               (set result (result stringByAppendingString:-">#{link_text}</a>"))
               (else (set result whole_match)))
-          (str replaceOccurrencesOfString:whole_match withString:result)))
-     
-     ; Next, inline-style links: [link text](url -"optional title")
+          (str replaceOccurrencesOfString:whole_match withString:result)))     
+     ; Next, inline-style links: [link text](url "optional title")
      (((eregex <<-END
 		(				# wrap whole match in $1
 		  \[
@@ -381,7 +374,7 @@
 			  \5		# matching quote
 			)?			# title is optional
 		  \)
-		)END -"xsge") findAllInString:str) eachInReverse:
+		)END "xs") findAllInString:str) eachInReverse:
       (do (m)
           (set whole_match (m groupAtIndex:1))
           (set link_text (m groupAtIndex:2))
@@ -405,7 +398,7 @@
 
 (function markdown_DoAutoLinks (str)
      (set str ((regex "<((https?|ftp):[^'\">\\s]+)>") replaceWithString:"<a href=\"$1\">$1</a>" inString:str))
-     (set str ((regex -"<(?:mailto:)?([-.\w]+\@[-a-z0-9]+(\.[-a-z0-9]+)*\.[a-z]+)>") replaceWithString:(markdown_UnescapeSpecialChars -"$1") inString:str))
+     (set str ((regex -"<(?:mailto:)?([-.\w]+\@[-a-z0-9]+(\.[-a-z0-9]+)*\.[a-z]+)>") replaceWithString:(markdown_UnescapeSpecialChars "$1") inString:str))
      ; This does not encode email addresses!
      str)
 
@@ -434,13 +427,12 @@
      ;  
      ;	  Header 2
      ;	  --------     
-     (((eregex -"^(.+)[ \t]*\n=+[ \t]*\n+" -"mx") findAllInString:str) eachInReverse:
+     ((/^(.+)[ \t]*\n=+[ \t]*\n+/mx findAllInString:str) eachInReverse:
       (do (m) ; Note the multi-line hack below.  -"\n\n" is not turned into new lines.
           (str replaceCharactersInRange:(m range) withString:"<h1>#{(markdown_RunSpanGamut (m groupAtIndex:1))}</h1>\n\n")))
-     (((eregex -"^(.+)[ \t]*\n-+[ \t]*\n+" -"mx") findAllInString:str) eachInReverse:
+     ((/^(.+)[ \t]*\n-+[ \t]*\n+/mx findAllInString:str) eachInReverse:
       (do (m)
           (str replaceCharactersInRange:(m range) withString:"<h2>#{(markdown_RunSpanGamut (m groupAtIndex:1))}</h2>\n\n")))
-     
      ; atx-style headers:
      ;	# Header 1
      ;	## Header 2
@@ -454,7 +446,7 @@
 		(.+?)			# $2 = Header text
 		[ \t]*
 		\#*				# optional closing #'s (not counted)
-		\n+END -"mx") findAllInString:str) eachInReverse:
+		\n+END "mx") findAllInString:str) eachInReverse:
       (do (m)
           (str replaceCharactersInRange:(m range) 
                withString:"<h#{((m groupAtIndex:1) length)}>#{(markdown_RunSpanGamut (m groupAtIndex:2))}</h#{((m groupAtIndex:1) length)}>\n\n")))
@@ -473,12 +465,11 @@
 		(#{marker_any}) [ \t]+			# list marker = $3
 		((?s:.+?)						# list item text   = $4
 		(\n{1,2}))
-		(?= \n* (\z | \2 (#{marker_any}) [ \t]+))END -"mx") findAllInString:list_str) eachInReverse:
+		(?= \n* (\z | \2 (#{marker_any}) [ \t]+))END "mx") findAllInString:list_str) eachInReverse:
       (do (m)
           (set item (m groupAtIndex:4))
           (set leading_line (m groupAtIndex:1))
           (set leading_space (m groupAtIndex:2))
-          
           (if (or leading_line ((regex -"\n{2,}") findInString:item)) 
               (then (set item (markdown_RunBlockGamut (markdown_Outdent item))))
               (else (set item (markdown_RunSpanGamut ((markdown_DoLists (markdown_Outdent item)) chomp)))))
@@ -493,10 +484,10 @@
      (set whole_list -"(([ ]{0,3}(#{marker_any})[ \t]+)(?s:.+?)(\z|\n{2,}(?=\S)(?![ \t]*#{marker_any}[ \t]+)))")
      (set result str) ;; default
      (if (> $g_list_level 0)
-         (then (((eregex -"^#{whole_list}" -"mx") findAllInString:str) eachInReverse:
+         (then (((eregex -"^#{whole_list}" "mx") findAllInString:str) eachInReverse:
                 (do (m)
                     (set m_list (m groupAtIndex:1))
-                    (if ((regex marker_ul) findInString:(m groupAtIndex:3)) (then (set list_type -"ul")) (else (set list_type -"ol")))
+                    (if ((regex marker_ul) findInString:(m groupAtIndex:3)) (then (set list_type "ul")) (else (set list_type "ol")))
                     ; Turn double returns into triple returns, so that we can make a
                     ; paragraph for the last item in a list, if necessary:
                     (set m_list ((regex -"\n{2,}") replaceWithString:"\n\n\n" inString:m_list))
@@ -504,10 +495,10 @@
                     (set formattedList "<#{list_type}>\n#{formattedList}</#{list_type}>\n")
                     (result replaceCharactersInRange:(m range) withString:formattedList))))
          (else 
-               (((eregex -"(?:(?<=\n\n)|\A\n?)#{whole_list}" -"mx") findAllInString:str) eachInReverse:
+               (((eregex -"(?:(?<=\n\n)|\A\n?)#{whole_list}" "mx") findAllInString:str) eachInReverse:
                 (do (m)
                     (set m_list (m groupAtIndex:1))
-                    (if ((regex marker_ul) findInString:(m groupAtIndex:3)) (then (set list_type -"ul")) (else (set list_type -"ol")))
+                    (if ((regex marker_ul) findInString:(m groupAtIndex:3)) (then (set list_type "ul")) (else (set list_type "ol")))
                     ; Turn double returns into triple returns, so that we can make a
                     ; paragraph for the last item in a list, if necessary:
                     (set m_list ((regex -"\n{2,}") replaceWithString:"\n\n\n" inString:m_list))
@@ -525,20 +516,19 @@
 
 (function markdown_DoCodeBlocks (str)
      (set str (NSMutableString stringWithString:str))
-     (((eregex <<-END
-		(?:\n\n|\A)
-		(	            # $1 = the code block -- one or more lines, starting with a space/tab
+     ((/(?:\n\n|\A)
+		(	            # $1 = the code block -- one or more lines, starting with a space or tab
 		  (?:
 		    (?:[ ]{4} | \t)  # Lines must start with a tab or a tab-width of spaces
 		    .*\n+
 		  )+
 		)
 		((?=^[ ]{0,4}\S)|\Z)	# Lookahead for non-space at line-start, or end of doc
-		END -"mx") findAllInString:str) eachInReverse:
+		/mx findAllInString:str) eachInReverse:
       (do (m)
           (set codeblock (m groupAtIndex:1))
           (set codeblock (markdown_Detab (markdown_EncodeCode (markdown_Outdent codeblock))))
-          (set codeblock ((regex -"(\A\n+)|(\s+\z)") replaceWithString:-"" inString:codeblock))
+          (set codeblock (/(\A\n+)|(\s+\z)/ replaceWithString:"" inString:codeblock))
           (str replaceCharactersInRange:(m range) withString:"\n<pre><code>#{codeblock}\n</code></pre>\n\n")))
      str)
 
@@ -559,9 +549,9 @@
           (set bq (markdown_RunBlockGamut bq))
           (set bq (/^/m replaceWithString:"  " inString:bq))
           ; These leading spaces screw with <pre> content, so we need to fix that:
-          (((eregex -"(\s*<pre>.+?</pre>)" -"egsx") findAllInString:bq) eachInReverse:
+          ((/(\s*<pre>.+?<\/pre>)/sx findAllInString:bq) eachInReverse:
            (do (m2) 
-               (bq replaceCharactersInRange:(m2 range) withString:((eregex -"^  " -"mg") replaceWithString:-"" inString:(m2 groupAtIndex:1)))))
+               (bq replaceCharactersInRange:(m2 range) withString:(/^  /m replaceWithString:"" inString:(m2 groupAtIndex:1)))))
           (str replaceCharactersInRange:(m range) withString:"<blockquote>\n#{bq}\n</blockquote>\n\n")))
      str)
 
@@ -596,16 +586,14 @@
      str)
 
 (function Markdown (str)
-     (set $g_urls (NSMutableDictionary dictionary))
-     (set $g_titles (NSMutableDictionary dictionary))
-     (set $g_html_blocks (NSMutableDictionary dictionary))
-     (set $g_escape_table (NSMutableDictionary dictionary))
-     (-"\`*_{}[]()>#+-.!" each: (do (c) ($g_escape_table setObject:"!!#{(c hash)}!!" forKey:c)))
-     
+     (set $g_urls (dict))
+     (set $g_titles (dict))
+     (set $g_html_blocks (dict))
+     (set $g_escape_table (dict))
+     (-"\`*_{}[]()>#+-.!" each: (do (c) ($g_escape_table setObject:"!!#{(c hash)}!!" forKey:c)))     
      (set $g_nested_brackets -"(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[(?>[^\[\]]+|\[\])*\])*\])*\])*\])*\])*") 
      ;; From running from Markdown.php
      (set $g_list_level 0)
-     
      ;; Standardize line endings
      (set str (/\r\n/ replaceWithString:"\n" inString:str)) ; Convert DOS to Unix
      (set str (/\r/ replaceWithString:"\n" inString:str)) ; Convert Mac to Unix
@@ -614,18 +602,13 @@
      ;; Convert tabs into 4 spaces
      (set str (markdown_Detab str))
      ;; Strip any lines consisting only of spaces and tabs.
-     (set str (/^[ \t]+$/m replaceWithString:"" inString:str)) 
-     
+     (set str (/^[ \t]+$/m replaceWithString:"" inString:str))      
      ;; Turn block-level HTML blocks into hash entries
      (set str (markdown_HashHTMLBlocks str))    
-     
      ;; Strip link definitions, store in hashes.
-     (set str (markdown_StripLinkDefinitions str)) 
-     
+     (set str (markdown_StripLinkDefinitions str))      
      (set str (markdown_RunBlockGamut str))
-     
-     (set str (markdown_UnescapeSpecialChars str))
-     
+     (set str (markdown_UnescapeSpecialChars str))     
      (str appendCharacter:'\n')
      str)
 

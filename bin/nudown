@@ -1,0 +1,6 @@
+#!/usr/bin/env nush
+(load "Markdown")
+
+(puts (NuMarkdown convert:((NSString alloc) 
+                           initWithData:((NSFileHandle fileHandleWithStandardInput) readDataToEndOfFile) 
+                           encoding:NSUTF8StringEncoding)))

@@ -3,7 +3,7 @@
 ;;
 ;;  Copyright (c) 2007 Tim Burks, Neon Design Technology, Inc.
 
-(load "markdown")
+(load "Markdown")
 
 (class TestMarkdown is NuTestCase
      
