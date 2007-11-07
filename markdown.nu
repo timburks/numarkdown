@@ -246,8 +246,8 @@
 		\1			# Matching closer
 		(?!`)END -"sx") findAllInString:str) each:
       (do (m)
-		  (set temp (/^[ \t]*/ replaceWithString:"" inString:(m groupAtIndex:2)))
-		  (set temp (/[ \t]*$/ replaceWithString:"" inString:temp))
+          (set temp (/^[ \t]*/ replaceWithString:"" inString:(m groupAtIndex:2)))
+          (set temp (/[ \t]*$/ replaceWithString:"" inString:temp))
           (str replaceOccurrencesOfString:(m group) withString:-"<code>#{(markdown_EncodeCode temp)}</code>")))
      str)
 
@@ -509,16 +509,11 @@
      result)
 
 (function markdown_Detab (str)
-     ; I need a real detab method here!
-     ((regex -"\t") replaceWithString:-"    " inString:str)     
-     ; ((eregex -"^(\t|[ ]{1,4})" -"m") replaceWithString:-"" inString:str)
-     ; ((eregex -"(.*?)\t}{$1.(' ' x (4 - length($1) % 4))" -"m") replaceWithString:-"" inString:str)
-     ; (set str (NSMutableString stringWithString:str))
-     ; (((eregex -"(.*?)\t" -"m") findAllInString:str) each:(do (m)
-     ; 	(set tmp (m groupAtIndex:1))
-     ; ))
-     ; (str)
-     )
+     ((/(.*?)\t/ findAllInString:str) each: 
+      (do (m)
+          (str replaceOccurrencesOfString:(m group) 
+               withString:"#{(m groupAtIndex:1)}#{(NSString spaces:(- 4 (NuMath integerMod:((m groupAtIndex:1) length) by:4)))}")))
+     str)
 
 (function markdown_DoCodeBlocks (str)
      (set str (NSMutableString stringWithString:str))
