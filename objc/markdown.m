@@ -9,7 +9,7 @@ static int load_nu_files(NSString *bundleIdentifier, NSString *mainFile)
     if (main_path) {
         NSString *main = [NSString stringWithContentsOfFile:main_path];
         if (main) {
-	    id parser = [Nu parser];
+            id parser = [Nu parser];
             id script = [parser parse: main];
             id result = [script evalWithContext:[parser context]];
         }

@@ -416,7 +416,7 @@
      (set str (markdown_DoAutoLinks str))
      (set str (markdown_EncodeAmpsAndAngles str))
      (set str (markdown_DoItalicsAndBold str))
-     (set str ((regex -" {2,n}\n") replaceWithString:"<br />\n" inString:str))
+     (set str ((regex -" {2,}\n") replaceWithString:"<br />\n" inString:str))
      str)
 
 (function markdown_DoHeaders (str)
@@ -426,7 +426,7 @@
      ;	  ========
      ;  
      ;	  Header 2
-     ;	  --------     
+     ;	  --------
      ((/^(.+)[ \t]*\n=+[ \t]*\n+/mx findAllInString:str) eachInReverse:
       (do (m) ; Note the multi-line hack below.  -"\n\n" is not turned into new lines.
           (str replaceCharactersInRange:(m range) withString:"<h1>#{(markdown_RunSpanGamut (m groupAtIndex:1))}</h1>\n\n")))
