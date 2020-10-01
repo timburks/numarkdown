@@ -31,3 +31,7 @@
 (task "install" => "framework" is
       (SH "sudo cp bin/nudown /usr/local/bin/nudown")
       (SH "ditto #{@framework_dir} /Library/Frameworks/#{@framework_dir}"))
+
+
+# I hope you like this 
+# Thamk you
